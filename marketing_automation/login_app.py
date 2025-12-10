@@ -1,24 +1,19 @@
-# marketing_automation/login_app.py
-
 from flask import Flask, render_template_string, request, redirect, url_for, session, make_response
 from flask_wtf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+from .models import CUSTOMER_DATA, PRODUCT_DATA
+from .campaign_manager import campaign_manager
+from .event_bus import event_bus 
 import time
 import logging
 import uuid 
 
-# Import necessary components from our module files
-from .models import CUSTOMER_DATA, PRODUCT_DATA
-from .campaign_manager import campaign_manager
-from .event_bus import event_bus 
-
-# --- Flask Configuration and Security ---
+# Flask config and security
 
 app = Flask(__name__)
-# IMPORTANT: Use a secure, long, randomly generated secret key in production.
 app.secret_key = "crm-secure-secret-for-cs411" 
 app.config.update(
     SESSION_COOKIE_SECURE=True,
@@ -33,15 +28,11 @@ limiter = Limiter(
 )
 limiter.init_app(app)
 
-# Logging Setup
+# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("crm_auth_audit")
 
-# --- CRM MOCK USERS & AUTH (Adapted from Project #1) ---
-
-# Password for all: 'crmpassword' (hashed)
 CRM_USERS_AUTH = {
-    # Profils Originaux (Agents / Admins)
     "leo.dupont": {
         "password_hash": generate_password_hash("crmpassword", method="pbkdf2:sha256:260000"),
         "role": "MarketingAgent",
@@ -63,11 +54,9 @@ CRM_USERS_AUTH = {
         "customer_id": next((c.customer_id for c in CUSTOMER_DATA if c.name == "Jean Petit"), None),
         "locked_until": 0,
     },
-    
-    # Nouveaux Profils Clients (Pour Tester l'Échelle)
     "victor.moreau": {
         "password_hash": generate_password_hash("crmpassword", method="pbkdf2:sha256:260000"),
-        "role": "Client", # Nouveau rôle
+        "role": "Client",
         "segment": "Male",
         "customer_id": next((c.customer_id for c in CUSTOMER_DATA if c.name == "Victor Moreau"), None),
         "locked_until": 0,
@@ -92,7 +81,6 @@ FAILED_ATTEMPTS = {}
 LOCKOUT_THRESHOLD = 5
 LOCKOUT_PERIOD = 300
 
-# --- Helper Functions (Auth & Session) ---
 
 def is_locked(user_record):
     return user_record.get("locked_until", 0) > time.time()
@@ -205,8 +193,6 @@ LOGIN_PAGE = """
 </body>
 </html>
 """
-
-# marketing_automation/login_app.py
 
 PRODUCT_LISTING_PAGE = """
 <!doctype html>
@@ -410,22 +396,15 @@ def dashboard():
     Implements the Product Listing Page and Segmentation logic.
     """
     customer_segment = session.get("segment")
-    
-    # 1. Apply Segmentation Logic
     active_campaign_product_id = None
-    # VARIABLE CORRIGÉE : Indique si le segment de l'utilisateur est ACTIVEment ciblé par une campagne
     is_targeting_active = False 
-    
-    # Find active campaign targeting the current user's segment
     for campaign in campaign_manager.campaigns.values():
         if campaign.target_segment == customer_segment:
-            is_targeting_active = True # <-- FIX
+            is_targeting_active = True
             if campaign.product_ids:
                 active_campaign_product_id = campaign.product_ids[0]
-            # Break dès qu'une campagne est trouvée pour le segment
             break
             
-    # 2. Prepare product list for display (Segmentation Rule)
     product_list_data = []
     
     for p in PRODUCT_DATA:
@@ -437,7 +416,6 @@ def dashboard():
         }
         product_list_data.append(product_data)
         
-    # Apply Rule: Targeted product appears first
     if active_campaign_product_id:
         targeted_product = next((p for p in product_list_data if p['product_id'] == active_campaign_product_id), None)
         if targeted_product:
@@ -448,7 +426,6 @@ def dashboard():
         PRODUCT_LISTING_PAGE, 
         username=session.get("username"),
         segment=customer_segment,
-        # UTILISATION DE LA VARIABLE CORRIGÉE
         is_targeting_active=is_targeting_active, 
         product_list=product_list_data,
         last_event=session.pop("last_event", None) 
@@ -501,10 +478,7 @@ def simulate_action():
     """
     product_id_str = request.form.get("product_id")
     action_type = request.form.get("action_type")
-    
-    # 1. Find Product and Campaign
     selected_product = next((p for p in PRODUCT_DATA if str(p.product_id) == product_id_str), None)
-    
     campaign_id = None
     campaign_name = "Unknown Campaign"
     
@@ -518,7 +492,6 @@ def simulate_action():
         session["last_event"] = f"Action '{action_type}' ignored: No active campaign tracks this product."
         return redirect(url_for('dashboard'))
 
-    # 2. Publish Event
     event_data = {
         'customer_id': session.get("customer_id"),
         'product_id': selected_product.product_id,
@@ -533,7 +506,6 @@ def simulate_action():
     return redirect(url_for('dashboard'))
 
 
-# Setup the necessary subscriptions when the application starts
 campaign_manager.setup_subscriptions()
 
 

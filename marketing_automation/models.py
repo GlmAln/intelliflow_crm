@@ -1,12 +1,9 @@
-# marketing_automation/models.py
-
 import uuid
 
 def short_uuid():
     """Helper to shorten UUID display for readability."""
     return str(uuid.uuid4())[:8]
 
-# --- 1. Product Model ---
 class Product:
     def __init__(self, name: str, category: str, base_price: float, targeting_segment: str):
         """
@@ -22,7 +19,6 @@ class Product:
     def __str__(self):
         return f"Product: {self.name} (ID: {short_uuid()}) - Targets: {self.targeting_segment}"
 
-# --- 2. Customer Model ---
 class Customer:
     def __init__(self, name: str, age: int, gender: str, segment: str, preferred_channel: str = 'Email'):
         """
@@ -40,7 +36,6 @@ class Customer:
     def __str__(self):
         return f"Customer: {self.name} (Segment: {self.segment}, CLV: {self.clv_score:.2f})"
 
-# --- 3. Campaign Model ---
 class Campaign:
     def __init__(self, name: str, target_segment: str, budget: float, product_ids: list):
         """
@@ -49,15 +44,13 @@ class Campaign:
         self.campaign_id = uuid.uuid4()
         self.name = name
         self.target_segment = target_segment
-        self.budget = budget # Allocated budget
-        self.product_ids = product_ids # Included products
-        
-        # Key metrics for Marketing Analysis
-        self.conversion_rate = 0.0 # Conversion Rate
-        self.roi = 0.0             # Return on Investment
-        self.effectiveness = 100.0 # Campaign Effectiveness (starts at 100)
+        self.budget = budget
+        self.product_ids = product_ids
 
-        # Basic data for metric calculations
+        self.conversion_rate = 0.0
+        self.roi = 0.0
+        self.effectiveness = 100.0
+
         self.total_impressions = 0
         self.total_conversions = 0
         self.revenue_generated = 0.0
@@ -65,23 +58,17 @@ class Campaign:
     def __str__(self):
         return f"Campaign: {self.name} (Target: {self.target_segment}, Budget: ${self.budget:,.2f})"
 
-# --- 4. Predefined Static Data (Initialization - 6 Profiles pour l'exhaustivité) ---
-
 CUSTOMER_DATA = [
-    # Profils du segment 'Male' (Agents / Utilisateurs)
     Customer("Leo Dupont", 35, "Male", "Male"),
-    Customer("Victor Moreau", 40, "Male", "Male"), # Nouveau 
+    Customer("Victor Moreau", 40, "Male", "Male"),
     
-    # Profils du segment 'Female'
     Customer("Mia Dubois", 28, "Female", "Female", preferred_channel='Notification'),
-    Customer("Sophie Leroux", 25, "Female", "Female"), # Nouveau
+    Customer("Sophie Leroux", 25, "Female", "Female"),
     
-    # Profils du segment 'Senior Male' (Profils à faible revenu ou service)
     Customer("Jean Petit", 68, "Male", "Senior Male", preferred_channel='Phone Call'),
-    Customer("Marc Durand", 65, "Male", "Senior Male") # Nouveau
+    Customer("Marc Durand", 65, "Male", "Senior Male")
 ]
 
-# Un produit pour chaque segment (reste le même)
 PRODUCT_DATA = [
     Product("Smartwatch", "Accessories", 199.99, "Male"),
     Product("Beauty Kit", "Cosmetics", 55.50, "Female"),

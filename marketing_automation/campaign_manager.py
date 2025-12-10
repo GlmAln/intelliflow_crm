@@ -1,5 +1,3 @@
-# marketing_automation/campaign_manager.py
-
 from .models import Campaign, PRODUCT_DATA
 from .event_bus import event_bus
 
@@ -9,8 +7,8 @@ class CampaignManager:
     It is responsible for creating and updating campaigns and their metrics.
     """
     def __init__(self):
-        self.campaigns = {} # Storage for Campaign objects by ID
-        self.product_map = {p.product_id: p for p in PRODUCT_DATA} # Map to find product by ID
+        self.campaigns = {}
+        self.product_map = {p.product_id: p for p in PRODUCT_DATA}
 
     def create_campaign(self, name: str, target_segment: str, budget: float, product_ids: list) -> Campaign:
         """
@@ -21,7 +19,7 @@ class CampaignManager:
         print(f"\n[MANAGER] Campaign created: {new_campaign.name}")
         return new_campaign
 
-    # --- Subscription Logic (Callbacks) ---
+    # Subscription logic
 
     def _update_on_purchase(self, data: dict):
         """
@@ -34,17 +32,13 @@ class CampaignManager:
             campaign = self.campaigns[campaign_id]
             product = self.product_map.get(product_id)
             
-            # 1. Update raw metrics
             campaign.total_conversions += 1
             if product:
                 campaign.revenue_generated += product.base_price
                 
-            # 2. Recalculate metrics
             if campaign.total_impressions > 0:
                 campaign.conversion_rate = (campaign.total_conversions / campaign.total_impressions) * 100
                 
-            # ROI simplification: (Revenue - Cost) / Cost. We assume a cost factor for simplicity.
-            # Using 5% of the total budget as a simulated cost for the interaction.
             cost_factor = 0.05 
             cost = campaign.budget * cost_factor
             if cost > 0:
@@ -60,7 +54,7 @@ class CampaignManager:
         campaign_id = data.get('campaign_id')
         if campaign_id in self.campaigns:
             campaign = self.campaigns[campaign_id]
-            campaign.effectiveness -= 5 # Symbolic reduction
+            campaign.effectiveness -= 5
             campaign.effectiveness = max(0, campaign.effectiveness)
             
             print(f"[MANAGER] Cancel/Ignore processed for '{campaign.name}'. Effectiveness reduced to: {campaign.effectiveness:.1f}%")
@@ -85,5 +79,4 @@ class CampaignManager:
         event_bus.subscribe("Cancel", self._reduce_on_cancel)
         event_bus.subscribe("AdInteraction", self._advance_on_ad_interaction)
 
-# Initialization of the manager
 campaign_manager = CampaignManager()
