@@ -113,8 +113,6 @@ Executing these tests proves the functionality of the Pub-Sub architecture and S
 
 PRISO TOTTO Guillaume-Alain: 22501093
 
-Ahmed Hatem A.R. Abdelwahab Haikal: 22001482
-
 Amir hossein Ahani: 22101535
 
 Mehmet Enim Avşar: 22202995
